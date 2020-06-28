@@ -6,7 +6,6 @@ import cv2
 import argparse
 import os
 from zhang_utils import homography, intrinsics, extrinsics, refinement, distortion, util
-from scipy.optimize import curve_fit
 
 class Calibration(object):
     def __init__(self):
@@ -55,14 +54,12 @@ class Calibration(object):
     def calibrate_dozens(self, img_shape=(480, 640)):
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.objpoints, self.imgpoints, img_shape[::-1],None,None)
             
-        self.calibrated_results = dict(camera_matrix=mtx, distortion_coeff=dist, 
-                                   rotation_vector=rvecs, translation_vector=tvecs)
+        self.calibrated_results = dict(camera_matrix=mtx, distortion_coeff=dist)
 
         print('-------------------- Calibration Succeeded! --------------------')
         print('-- Camera Matrix: \n', mtx)
         print('-- Distortion Coefficients: \n', dist)
         print('----------------------------------------------------------------')
-        print('################################################################')
 
     def undistort(self, imgfile):
         if imgfile is None:
@@ -113,13 +110,11 @@ class Calibration(object):
 
         K_opt, k_opt, extrinsics_opt = refinement.refine_all_parameters(objp, imgp, K, k, extrinsics_matrices)
 
+        self.calibrated_results = dict(camera_matrix=K_opt, distortion_coeff=np.array([k_opt[0], k_opt[1], 0, 0, 0]))
         print('-------------------- Calibration Succeeded! --------------------')
         print('-- Camera Matrix: \n', K_opt)
         print('-- Distortion Coefficients: \n', k_opt)
         print('----------------------------------------------------------------')
-        print('################################################################')
-
-
 
 if __name__ == '__main__':
     calibration = Calibration()
@@ -130,10 +125,11 @@ if __name__ == '__main__':
 
     calibration.getPoints(inputdir)
     calibration.calibrate_dozens()
-    if img is not None:
+    if zhang == True:
         calibration.calibrate_implemented_zhang_method()
-    if zhang:
+    if img is not None:
         calibration.undistort(img)
+    print('################################################################')
 
 '''
 Reference
