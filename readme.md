@@ -4,14 +4,16 @@ The source code of the stereo project.
 
 # Index
 
-### Problem 6
+### Problem 6&7
 
 #### - Dependency
 
-1. numpy
-2. cv2
+* numpy
+
+* cv2
 
 #### - Preparation 
 
-Put images into the dirent `.\left` , and run `python3 problem6_calibrate.py --InputDir ./left `
+Put images into the dirent `./left` , and run `python3 calibrate.py --InputDir ./left `
 
+If you use `--image_file xxx.jpg` option, it will write a undistorted image in the current folder.

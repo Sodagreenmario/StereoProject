@@ -11,12 +11,14 @@ class Calibration(object):
         super(Calibration, self).__init__()
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument('--InputDir', type=str, default='./left', help='the path of the input dirent')
+        self.parser.add_argument('--image_file', type=str, default=None, help='the path of the undistorted image')
 
         self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
         self.objp = np.zeros((6*7, 3), np.float32)
         self.objp[:,:2] = np.mgrid[0:7, 0:6].T.reshape(-1,2)
         self.objpoints = [] # 3d point in real world space
         self.imgpoints = [] # 2d points in image plane.
+        self.calibrated_results = None
 
     def parse(self):
         self.opt = self.parser.parse_args()
@@ -40,6 +42,21 @@ class Calibration(object):
             corners2 = cv2.cornerSubPix(img, corners, (11,11), (-1,-1), self.criteria)
             self.imgpoints.append(corners2)
 
+    def undistort(self, imgfile):
+        if imgfile is None:
+            return
+        img = cv2.imread(imgfile)
+        h, w = img.shape[:2]
+        mtx, dist = self.calibrated_results['camera_matrix'], self.calibrated_results['distortion_coeff']
+        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
+        # undistort
+        dst = cv2.undistort(img, mtx, dist, None, newcameramtx)
+        # crop the image
+        x, y, w, h = roi
+        dst = dst[y:y+h, x:x+w]
+        cv2.imwrite('./result.jpg', dst)
+        print('Output: ' + './result.jpg')
+
     def calibrate_dozens(self, inputdir):
         # Input parameters:
         #   inputdir: str of path
@@ -49,6 +66,9 @@ class Calibration(object):
 
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.objpoints, self.imgpoints, img.shape[::-1],None,None)
             
+        self.calibrated_results = dict(camera_matrix=mtx, distortion_coeff=dist, 
+                                   rotation_vector=rvecs, translation_vector=tvecs)
+
         print('-------------------- Calibration Succeeded! --------------------')
         print('-- Camera Matrix: \n', mtx)
         print('-- Distortion Coefficients: \n', dist)
@@ -62,8 +82,10 @@ if __name__ == '__main__':
     calibration = Calibration()
     opts = calibration.parse()
     inputdir = opts.InputDir
+    img = opts.image_file
 
     calibration.calibrate_dozens(inputdir)
+    calibration.undistort(img)
 
 '''
 Reference
