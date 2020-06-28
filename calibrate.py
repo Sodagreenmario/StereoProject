@@ -5,6 +5,8 @@ import numpy as np
 import cv2
 import argparse
 import os
+from zhang_utils import homography, intrinsics, extrinsics, refinement, distortion, util
+from scipy.optimize import curve_fit
 
 class Calibration(object):
     def __init__(self):
@@ -12,6 +14,8 @@ class Calibration(object):
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument('--InputDir', type=str, default='./left', help='the path of the input dirent')
         self.parser.add_argument('--image_file', type=str, default=None, help='the path of the undistorted image')
+        self.parser.add_argument('--Undistort', type=bool, default=False, help='whether undistort the image')
+        self.parser.add_argument('--Zhang', type=bool, default=False, help='Add Zhang\'s medthod as a comparison')
 
         self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
         self.objp = np.zeros((6*7, 3), np.float32)
@@ -42,6 +46,25 @@ class Calibration(object):
             corners2 = cv2.cornerSubPix(img, corners, (11,11), (-1,-1), self.criteria)
             self.imgpoints.append(corners2)
 
+    def getPoints(self, inputdir):
+        # Input parameters:
+        #   inputdir: str of path
+        for fimg in os.listdir(inputdir):
+            img = cv2.imread(os.path.join(inputdir, fimg), 0)
+            self.calibrate_single(img)
+
+    def calibrate_dozens(self, img_shape=(480, 640)):
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.objpoints, self.imgpoints, img_shape[::-1],None,None)
+            
+        self.calibrated_results = dict(camera_matrix=mtx, distortion_coeff=dist, 
+                                   rotation_vector=rvecs, translation_vector=tvecs)
+
+        print('-------------------- Calibration Succeeded! --------------------')
+        print('-- Camera Matrix: \n', mtx)
+        print('-- Distortion Coefficients: \n', dist)
+        print('----------------------------------------------------------------')
+        print('################################################################')
+
     def undistort(self, imgfile):
         if imgfile is None:
             return
@@ -57,25 +80,46 @@ class Calibration(object):
         cv2.imwrite('./result.jpg', dst)
         print('Output: ' + './result.jpg')
 
-    def calibrate_dozens(self, inputdir):
-        # Input parameters:
-        #   inputdir: str of path
-        for fimg in os.listdir(inputdir):
-            img = cv2.imread(os.path.join(inputdir, fimg), 0)
-            self.calibrate_single(img)
+    def calibrate_implemented_zhang_method(self):
+        objp = self.objpoints[0][:, :2]
+        imgp = []
+        # Compute homographies for each image
+        homographies = []
+        for point in self.imgpoints:
+            curp = point.reshape(-1, 2)
+            H = homography.calculate_homography(objp, curp)
+            H = homography.refine_homography(H, objp, curp)
+            imgp.append(curp)
+            homographies.append(H)
 
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.objpoints, self.imgpoints, img.shape[::-1],None,None)
-            
-        self.calibrated_results = dict(camera_matrix=mtx, distortion_coeff=dist, 
-                                   rotation_vector=rvecs, translation_vector=tvecs)
+        # Compute intrinsics
+        K = intrinsics.recover_intrinsics(homographies)
+
+        obj_homo_3d = util.to_homogeneous_3d(objp)
+
+        extrinsics_matrices = []
+        for h, H in enumerate(homographies):
+            E = extrinsics.recover_extrinsics(H, K)
+            extrinsics_matrices.append(E)
+
+            # projection matrix
+            P = np.dot(K, E)
+
+            predicted = np.dot(obj_homo_3d, P.T)
+            predicted = util.to_inhomogeneous(predicted)
+            points = self.imgpoints[h]
+            nonlinear_sse_decomp = np.sum((predicted - points) ** 2)
+
+        k = distortion.calculate_lens_distortion(objp, imgp, K, extrinsics_matrices)
+
+        K_opt, k_opt, extrinsics_opt = refinement.refine_all_parameters(objp, imgp, K, k, extrinsics_matrices)
 
         print('-------------------- Calibration Succeeded! --------------------')
-        print('-- Camera Matrix: \n', mtx)
-        print('-- Distortion Coefficients: \n', dist)
-        print('-- Rotation Vectors: \n', rvecs)
-        print('-- Translation Vectors: \n', tvecs)
+        print('-- Camera Matrix: \n', K_opt)
+        print('-- Distortion Coefficients: \n', k_opt)
         print('----------------------------------------------------------------')
         print('################################################################')
+
 
 
 if __name__ == '__main__':
@@ -83,9 +127,15 @@ if __name__ == '__main__':
     opts = calibration.parse()
     inputdir = opts.InputDir
     img = opts.image_file
+    undistort = opts.Undistort
+    zhang = opts.Zhang
 
-    calibration.calibrate_dozens(inputdir)
-    calibration.undistort(img)
+    calibration.getPoints(inputdir)
+    calibration.calibrate_dozens()
+    if undistort:
+        calibration.calibrate_implemented_zhang_method()
+    if zhang:
+        calibration.undistort(img)
 
 '''
 Reference
