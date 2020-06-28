@@ -39,23 +39,23 @@ class Calibration(object):
 
             corners2 = cv2.cornerSubPix(img, corners, (11,11), (-1,-1), self.criteria)
             self.imgpoints.append(corners2)
-            
-            ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.objpoints, self.imgpoints, img.shape[::-1],None,None)
-            
-            print('-------------------- Calibration Succeeded! --------------------')
-            print('-- Camera Matrix: \n', mtx)
-            print('-- Distortion Coefficients: \n', dist)
-            print('-- Rotation Vectors: \n', rvecs)
-            print('-- Translation Vectors: \n', tvecs)
-            print('----------------------------------------------------------------')
-            print('################################################################')
 
     def calibrate_dozens(self, inputdir):
         # Input parameters:
         #   inputdir: str of path
         for fimg in os.listdir(inputdir):
             img = cv2.imread(os.path.join(inputdir, fimg), 0)
-            calibrate_single(img)
+            self.calibrate_single(img)
+
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(self.objpoints, self.imgpoints, img.shape[::-1],None,None)
+            
+        print('-------------------- Calibration Succeeded! --------------------')
+        print('-- Camera Matrix: \n', mtx)
+        print('-- Distortion Coefficients: \n', dist)
+        print('-- Rotation Vectors: \n', rvecs)
+        print('-- Translation Vectors: \n', tvecs)
+        print('----------------------------------------------------------------')
+        print('################################################################')
 
 
 if __name__ == '__main__':
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     opts = calibration.parse()
     inputdir = opts.InputDir
 
-    calibrate_dozens()
+    calibration.calibrate_dozens(inputdir)
 
 '''
 Reference
