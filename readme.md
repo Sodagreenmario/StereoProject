@@ -4,16 +4,23 @@ The source code of the stereo project.
 
 # Index
 
-### Problem 6&7
+### Problem 6&7&8
 
 #### - Dependency
 
-* numpy
+* numpy==1.18.4
 
-* cv2
+* cv2==3.4.2.16
+* scicy==1.4.1
 
 #### - Preparation 
 
 Put images into the dirent `./left` , and run `python3 calibrate.py --InputDir ./left `
 
-If you use `--image_file xxx.jpg` option, it will write a undistorted image in the current folder.
+To get a undistort image of a given image and write it in the current folder:
+
+`python3 calibrate.py --InputDir ./left --image_file ./left/left12.jpg`
+
+To compare the result with implemented Zhang's method:
+
+`python3 calibrate.py --Input ./left --Zhang True  `

@@ -14,7 +14,6 @@ class Calibration(object):
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument('--InputDir', type=str, default='./left', help='the path of the input dirent')
         self.parser.add_argument('--image_file', type=str, default=None, help='the path of the undistorted image')
-        self.parser.add_argument('--Undistort', type=bool, default=False, help='whether undistort the image')
         self.parser.add_argument('--Zhang', type=bool, default=False, help='Add Zhang\'s medthod as a comparison')
 
         self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -127,12 +126,11 @@ if __name__ == '__main__':
     opts = calibration.parse()
     inputdir = opts.InputDir
     img = opts.image_file
-    undistort = opts.Undistort
     zhang = opts.Zhang
 
     calibration.getPoints(inputdir)
     calibration.calibrate_dozens()
-    if undistort:
+    if img is not None:
         calibration.calibrate_implemented_zhang_method()
     if zhang:
         calibration.undistort(img)
