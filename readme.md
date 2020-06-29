@@ -24,3 +24,19 @@ To get a undistort image of a given image and write it in the current folder:
 To compare the result with implemented Zhang's method:
 
 `python3 calibrate.py --Input ./left --Zhang True  `
+
+### Problem 12
+
+#### - Dependency
+
+* numpy==1.18.4
+
+* cv2==3.4.2.16
+
+#### - Preparation
+
+Put images from the left camera into the dirent `./left`, and put images for the right camera into the dirent './right'.
+
+Then run:
+
+`python3 bbinocular_calibration --InputDirL ./left --OutputDirR ./right`

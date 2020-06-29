@@ -1,4 +1,5 @@
 left/*.jpg
+right/*.jpg
 .DS_Store
 .idea
 venv
