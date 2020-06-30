@@ -71,7 +71,7 @@ class Calibration(object):
 
         self.calibrated_resultsL = dict(camera_matrix=mtxL, distortion_coeff=distL)
         self.calibrated_resultsR = dict(camera_matrix=mtxR, distortion_coeff=distR)
-
+        
         # Rectify
         if rectify:
             R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(mtxL, distL, mtxR, distR, img_shape[::-1], R, T)
@@ -79,7 +79,6 @@ class Calibration(object):
             leftmapX, leftmapY = cv2.initUndistortRectifyMap(mtxL, distL, R1, P1, img_shape[::-1], cv2.CV_32FC1)
             rightmapX, rightmapY = cv2.initUndistortRectifyMap(mtxR, distR, R2, P2, img_shape[::-1], cv2.CV_32FC1)
             self.rectified_result = dict(leftmapX=leftmapX, leftmapY=leftmapY, rightmapX=rightmapX, rightmapY=rightmapY)
-            print(R1, '\n', R2, '\n', P1, '\n', P2)
 
         print('-------------------- Calibration Succeeded! --------------------')
         print('-- Left  - Camera Matrix: \n', mtxL)
