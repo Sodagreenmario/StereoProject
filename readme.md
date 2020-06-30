@@ -4,7 +4,7 @@ The source code of the stereo project.
 
 # Index
 
-### Problem 6&7&8
+### Problem 6 & 7 & 8
 
 #### - Dependency
 
@@ -25,7 +25,7 @@ To compare the result with implemented Zhang's method:
 
 `python3 calibrate.py --Input ./left --Zhang True  `
 
-### Problem 12
+### Problem 12 & 14
 
 #### - Dependency
 
@@ -35,8 +35,12 @@ To compare the result with implemented Zhang's method:
 
 #### - Preparation
 
-Put images from the left camera into the dirent `./left`, and put images for the right camera into the dirent './right'.
+Put images from the left camera into the dirent `./left`, and put images for the right camera into the dirent `./right`.
 
 Then run:
 
-`python3 bbinocular_calibration --InputDirL ./left --OutputDirR ./right`
+`python3 binocular_calibration --InputDirL ./left --OutputDirR ./right`
+
+To rectify the left and the right images, and get the result of a pair of samples(say, `left13.jpg` and `right13.jpg`), run:
+
+`python3 binocular_calibration --InputDirL ./left --OutputDirR ./right --Rectify True --img_index 13 `
