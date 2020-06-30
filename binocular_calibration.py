@@ -51,7 +51,7 @@ class Calibration(object):
                 self.objpointsR.append(self.objp)
                 self.imgpointsR.append(corners2)
 
-    def getPoints(self, inputdir, left=None, rectify=True):
+    def getPoints(self, inputdir, left=None):
         # Input parameters:
         #   inputdir: str of path
         for i in range(1, 14):
@@ -99,7 +99,7 @@ class Calibration(object):
         leftmapX, leftmapY = self.rectified_result['leftmapX'], self.rectified_result['leftmapY']
         rightmapX, rightmapY = self.rectified_result['rightmapX'], self.rectified_result['rightmapY']
         dst_l = cv2.remap(left, leftmapX, leftmapY, cv2.INTER_LANCZOS4)
-        dst_r = cv2.remap(right,rightmapX, rightmapY, cv2.INTER_LANCZOS4)
+        dst_r = cv2.remap(right, rightmapX, rightmapY, cv2.INTER_LANCZOS4)
         cv2.imwrite('left' + '.jpg', dst_l)
         cv2.imwrite('right' + '.jpg', dst_r)
 
@@ -108,7 +108,6 @@ class Calibration(object):
             dst_r[line * 20, :] = 0
         cv2.imwrite('result.jpg', np.hstack([dst_l, dst_r]))
         print('undistort successed!')
-
 
 
 if __name__ == '__main__':
