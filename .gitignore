@@ -4,3 +4,4 @@ right/*.jpg
 .idea
 venv
 *.jpg
+*.png

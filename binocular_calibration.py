@@ -25,6 +25,7 @@ class Calibration(object):
         self.calibrated_resultsL = None
         self.calibrated_resultsR = None
         self.rectified_result = None
+        self.roi_info = None
 
     def parse(self):
         self.opt = self.parser.parse_args()
@@ -63,6 +64,14 @@ class Calibration(object):
                 img = cv2.imread(os.path.join(inputdir, 'right' + str(i).zfill(2) + '.jpg'), 0)
             self.calibrate_single(img, left)
 
+    def convertROI(self, roi1, roi2):
+        left_top_x = max(roi1[0], roi2[0])
+        left_top_y = max(roi1[1], roi2[1])
+        right_bot_x = min(roi1[2], roi2[2])
+        right_bot_y = min(roi1[3], roi2[3])
+        self.roi_info = dict(left_top = (left_top_x, left_top_y), right_bot=(right_bot_x, right_bot_y))
+
+
     def calibrate_dozens(self, img_shape=(640, 480), rectify=True):
         ret, mtxL, distL, rvecsL, tvecsL = cv2.calibrateCamera(self.objpointsL, self.imgpointsL, img_shape[::-1], None, None)
         ret, mtxR, distR, rvecsR, tvecsR = cv2.calibrateCamera(self.objpointsR, self.imgpointsR, img_shape[::-1], None, None)
@@ -80,6 +89,8 @@ class Calibration(object):
             rightmapX, rightmapY = cv2.initUndistortRectifyMap(mtxR, distR, R2, P2, img_shape[::-1], cv2.CV_32FC1)
             self.rectified_result = dict(leftmapX=leftmapX, leftmapY=leftmapY, rightmapX=rightmapX, rightmapY=rightmapY)
 
+            self.convertROI(roi1, roi2)
+
         print('-------------------- Calibration Succeeded! --------------------')
         print('-- Left  - Camera Matrix: \n', mtxL)
         print('-- Left  - Distortion Coefficients: \n', distL)
@@ -93,20 +104,23 @@ class Calibration(object):
         print('----------------------------------------------------------------')
 
     def undistortRectified(self, ind):
-        left = cv2.imread('./left/left' + ind + '.jpg')
-        right = cv2.imread('./right/right' + ind + '.jpg')
+        left = cv2.imread('./left/left' + ind + '.jpg', 0)
+        right = cv2.imread('./right/right' + ind + '.jpg', 0)
 
         leftmapX, leftmapY = self.rectified_result['leftmapX'], self.rectified_result['leftmapY']
         rightmapX, rightmapY = self.rectified_result['rightmapX'], self.rectified_result['rightmapY']
-        dst_l = cv2.remap(left, leftmapX, leftmapY, cv2.INTER_LANCZOS4)
-        dst_r = cv2.remap(right, rightmapX, rightmapY, cv2.INTER_LANCZOS4)
+        ltx, lty = self.roi_info['left_top']
+        rbx, rby = self.roi_info['right_bot']
+        dst_l = cv2.remap(left, leftmapX, leftmapY, cv2.INTER_LANCZOS4)[ltx:rbx, lty:rby]
+        dst_r = cv2.remap(right, rightmapX, rightmapY, cv2.INTER_LANCZOS4)[ltx:rbx, lty:rby]
+
         cv2.imwrite('left' + '.jpg', dst_l)
         cv2.imwrite('right' + '.jpg', dst_r)
 
         for line in range(0, dst_l.shape[0] // 20):
             dst_l[line * 20, :] = 0
             dst_r[line * 20, :] = 0
-        cv2.imwrite('result.jpg', np.hstack([dst_l, dst_r]))
+        cv2.imwrite('rectify_result.jpg', np.hstack([dst_l, dst_r]))
         print('undistort successed!')
 
 
